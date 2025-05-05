@@ -28,6 +28,7 @@ import (
 	"github.com/traefik/traefik/v3/pkg/types"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 const delta float64 = 1e-10
@@ -345,7 +346,7 @@ func assertNotEmpty() func(t *testing.T, actual interface{}) {
 	return func(t *testing.T, actual interface{}) {
 		t.Helper()
 
-		assert.NotEqual(t, "", actual)
+		assert.NotEmpty(t, actual)
 	}
 }
 
@@ -409,6 +410,8 @@ func TestLoggerJSON(t *testing.T) {
 				"time":                    assertNotEmpty(),
 				"StartLocal":              assertNotEmpty(),
 				"StartUTC":                assertNotEmpty(),
+				TraceID:                   assertNotEmpty(),
+				SpanID:                    assertNotEmpty(),
 			},
 		},
 		{
@@ -452,6 +455,8 @@ func TestLoggerJSON(t *testing.T) {
 				"time":                    assertNotEmpty(),
 				StartLocal:                assertNotEmpty(),
 				StartUTC:                  assertNotEmpty(),
+				TraceID:                   assertNotEmpty(),
+				SpanID:                    assertNotEmpty(),
 			},
 		},
 		{
@@ -585,7 +590,7 @@ func TestLoggerJSON(t *testing.T) {
 			err = json.Unmarshal(logData, &jsonData)
 			require.NoError(t, err)
 
-			assert.Equal(t, len(test.expected), len(jsonData))
+			assert.Len(t, jsonData, len(test.expected))
 
 			for field, assertion := range test.expected {
 				assertion(t, jsonData[field])
@@ -627,6 +632,8 @@ func TestLogger_AbortedRequest(t *testing.T) {
 		"downstream_Content-Type":      assertString("text/plain"),
 		"downstream_Transfer-Encoding": assertString("chunked"),
 		"downstream_Cache-Control":     assertString("no-cache"),
+		TraceID:                        assertNotEmpty(),
+		SpanID:                         assertNotEmpty(),
 	}
 
 	config := &types.AccessLog{
@@ -642,7 +649,7 @@ func TestLogger_AbortedRequest(t *testing.T) {
 	err = json.Unmarshal(logData, &jsonData)
 	require.NoError(t, err)
 
-	assert.Equal(t, len(expected), len(jsonData))
+	assert.Len(t, jsonData, len(expected))
 
 	for field, assertion := range expected {
 		assertion(t, jsonData[field])
@@ -873,7 +880,7 @@ func assertValidLogData(t *testing.T, expected string, logData []byte) {
 
 	formatErrMessage := fmt.Sprintf("Expected:\t%q\nActual:\t%q", expected, string(logData))
 
-	require.Equal(t, len(resultExpected), len(result), formatErrMessage)
+	require.Len(t, result, len(resultExpected), formatErrMessage)
 	assert.Equal(t, resultExpected[ClientHost], result[ClientHost], formatErrMessage)
 	assert.Equal(t, resultExpected[ClientUsername], result[ClientUsername], formatErrMessage)
 	assert.Equal(t, resultExpected[RequestMethod], result[RequestMethod], formatErrMessage)
@@ -944,6 +951,10 @@ func doLoggingTLSOpt(t *testing.T, config *types.AccessLog, enableTLS bool) {
 			}},
 		}
 	}
+
+	tracer := noop.Tracer{}
+	spanCtx, _ := tracer.Start(req.Context(), "test")
+	req = req.WithContext(spanCtx)
 
 	chain := alice.New()
 	chain = chain.Append(capture.Wrap)

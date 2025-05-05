@@ -45,6 +45,7 @@ func Test_buildConfiguration(t *testing.T) {
 		"traefik/http/services/Service01/loadBalancer/healthCheck/path":                              "foobar",
 		"traefik/http/services/Service01/loadBalancer/healthCheck/port":                              "42",
 		"traefik/http/services/Service01/loadBalancer/healthCheck/interval":                          "1s",
+		"traefik/http/services/Service01/loadBalancer/healthCheck/unhealthyinterval":                 "1s",
 		"traefik/http/services/Service01/loadBalancer/healthCheck/timeout":                           "1s",
 		"traefik/http/services/Service01/loadBalancer/healthCheck/hostname":                          "foobar",
 		"traefik/http/services/Service01/loadBalancer/healthCheck/headers/name0":                     "foobar",
@@ -58,6 +59,7 @@ func Test_buildConfiguration(t *testing.T) {
 		"traefik/http/services/Service01/loadBalancer/sticky/cookie/secure":                          "true",
 		"traefik/http/services/Service01/loadBalancer/sticky/cookie/httpOnly":                        "true",
 		"traefik/http/services/Service01/loadBalancer/sticky/cookie/path":                            "foobar",
+		"traefik/http/services/Service01/loadBalancer/strategy":                                      "foobar",
 		"traefik/http/services/Service01/loadBalancer/servers/0/url":                                 "foobar",
 		"traefik/http/services/Service01/loadBalancer/servers/1/url":                                 "foobar",
 		"traefik/http/services/Service02/mirroring/service":                                          "foobar",
@@ -646,6 +648,7 @@ func Test_buildConfiguration(t *testing.T) {
 			Services: map[string]*dynamic.Service{
 				"Service01": {
 					LoadBalancer: &dynamic.ServersLoadBalancer{
+						Strategy: "foobar",
 						Sticky: &dynamic.Sticky{
 							Cookie: &dynamic.Cookie{
 								Name:     "foobar",
@@ -663,14 +666,15 @@ func Test_buildConfiguration(t *testing.T) {
 							},
 						},
 						HealthCheck: &dynamic.ServerHealthCheck{
-							Scheme:          "foobar",
-							Mode:            "foobar",
-							Path:            "foobar",
-							Port:            42,
-							Interval:        ptypes.Duration(time.Second),
-							Timeout:         ptypes.Duration(time.Second),
-							Hostname:        "foobar",
-							FollowRedirects: pointer(true),
+							Scheme:            "foobar",
+							Mode:              "foobar",
+							Path:              "foobar",
+							Port:              42,
+							Interval:          ptypes.Duration(time.Second),
+							UnhealthyInterval: pointer(ptypes.Duration(time.Second)),
+							Timeout:           ptypes.Duration(time.Second),
+							Hostname:          "foobar",
+							FollowRedirects:   pointer(true),
 							Headers: map[string]string{
 								"name0": "foobar",
 								"name1": "foobar",
